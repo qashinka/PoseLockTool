@@ -1,0 +1,36 @@
+# General Visual Studio
+.vs/
+*.[Ss]uo
+*.[Uu]ser
+*.[Pp]ublish.xml
+*.[Pp]ublish.*.vspscc
+*.vssscc
+*.vsp
+*.suo
+*.user
+*.sln.docstates
+
+# C# and C++ build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Aa][Rr][Mm]64/
+[Aa][Rr][Mm]/
+[Ww][Ii][Nn]32/
+
+# Build results
+[Bb]uild[Ll]og.*
+*.[Pp]db
+*.[Ii]lk
+*.[Ll]og
+*.[Tt]log
+*.[Aa]pj
+*.[Pp]ch
+*.[Ii]db
+*.[Oo]bj
+*.[Rr]eproj
+
+# Distribution folder
+/PoseLockTool_v1.0/
