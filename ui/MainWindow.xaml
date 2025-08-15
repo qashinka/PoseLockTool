@@ -9,26 +9,58 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Button x:Name="RefreshButton" Content="トラッカーを再検索" Grid.Row="0" HorizontalAlignment="Left" Padding="10,5" Click="RefreshButton_Click"/>
+        <GroupBox Header="Virtual Tracker Settings" Grid.Row="0" Padding="5">
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Number of virtual trackers to create:"/>
+                <TextBox x:Name="NumTrackersTextBox" Width="50" Margin="5,0"/>
+                <Button x:Name="SaveNumTrackersButton" Content="Apply Count" Click="SaveNumTrackersButton_Click"/>
+            </StackPanel>
+        </GroupBox>
 
-        <ListBox x:Name="TrackerListBox" Grid.Row="1" Margin="0,10">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <CheckBox Content="{Binding SerialNumber}" IsChecked="{Binding IsEnabled}"/>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <Button x:Name="RefreshButton" Content="トラッカーを再検索" Grid.Row="1" HorizontalAlignment="Left" Padding="10,5" Click="RefreshButton_Click" Margin="0,10,0,0"/>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+        <DataGrid x:Name="TrackerDataGrid" Grid.Row="2" Margin="0,10" AutoGenerateColumns="False" CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Index" Binding="{Binding DeviceId}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding TrackerType}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Serial Number" Binding="{Binding SerialNumber}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Current Role" Binding="{Binding CurrentRole}" IsReadOnly="True"/>
+                
+                <DataGridTemplateColumn Header="Link To (Proxy Target)">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding AvailablePhysicalTrackers}" 
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedItem="{Binding SelectedProxyTarget}"
+                                      IsEnabled="{Binding IsVirtual}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Set Role As">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding AvailableRoles}" 
+                                      SelectedItem="{Binding SelectedRole}"
+                                      IsEnabled="{Binding IsVirtual}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="RegisterDriverButton" Content="ドライバーを登録" Padding="10,5" Click="RegisterDriverButton_Click" Margin="0,0,10,0"/>
             <Button x:Name="SaveButton" Content="設定を保存" Padding="10,5" Click="SaveButton_Click"/>
         </StackPanel>
 
-        <TextBlock x:Name="StatusTextBlock" Grid.Row="3" Margin="0,5,0,0" />
+        <TextBlock x:Name="StatusTextBlock" Grid.Row="4" Margin="0,5,0,0" />
     </Grid>
 </Window>

@@ -69,4 +69,10 @@ private:
 
 	// A flag to control whether pose locking is enabled for this device
 	bool pose_locking_enabled_;
+
+	// A flag to control whether we are in proxy mode, tracking another device
+	bool proxy_mode_enabled_;
+
+	// The device index of the real tracker we are currently proxying
+	uint32_t target_device_index_;
 };

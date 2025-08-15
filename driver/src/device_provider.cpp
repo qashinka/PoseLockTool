@@ -14,27 +14,26 @@ vr::EVRInitError MyDeviceProvider::Init( vr::IVRDriverContext *pDriverContext )
 	VR_INIT_SERVER_DRIVER_CONTEXT( pDriverContext );
 
 	const unsigned int number_of_trackers = 2;
-	for ( unsigned int i = 0; i < number_of_trackers; i++ )
+		// Let's get the number of trackers to create from settings
+	const char* settings_section = "PoseLockDriver";
+	const char* settings_key = "num_virtual_trackers";
+	vr::EVRSettingsError eError = vr::VRSettingsError_None;
+	int32_t num_trackers = vr::VRSettings()->GetInt32(settings_section, settings_key, &eError);
+
+	// If there was an error getting the setting, or it wasn't set, default to 0
+	if (eError != vr::VRSettingsError_None)
 	{
+		num_trackers = 0;
+	}
 
-		std::unique_ptr< MyTrackerDeviceDriver > tracker_device = std::make_unique< MyTrackerDeviceDriver >( i );
+	DriverLog("PoseLockDriver: Found setting to create %d virtual trackers.", num_trackers);
 
-		// Now we need to tell vrserver about our controllers.
-		// The first argument is the serial number of the device, which must be unique across all devices.
-		// We get it from our driver settings when we instantiate,
-		// And can pass it out of the function with MyGetSerialNumber().
-		// Let's add the left hand controller first (there isn't a specific order).
-		// make sure we actually managed to create the device.
-		// TrackedDeviceAdded returning true means we have had our device added to SteamVR.
-		if ( !vr::VRServerDriverHost()->TrackedDeviceAdded( tracker_device->MyGetSerialNumber().c_str(),
-				 vr::TrackedDeviceClass_GenericTracker, tracker_device.get() ) )
-		{
-			DriverLog( "Failed to create left controller device!" );
-			// We failed? Return early.
-			return vr::VRInitError_Driver_Unknown;
-		}
-
-		my_tracker_devices_.emplace_back( std::move( tracker_device ) );
+	// Create the specified number of trackers
+	for (int i = 0; i < num_trackers; i++)
+	{
+		// The tracker ID will start from 10, so we add 10 to the loop index
+		my_tracker_devices_.push_back(std::make_unique<MyTrackerDeviceDriver>(10 + i));
+		vr::VRServerDriverHost()->TrackedDeviceAdded(my_tracker_devices_.back()->MyGetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, my_tracker_devices_.back().get());
 	}
 
 	return vr::VRInitError_None;

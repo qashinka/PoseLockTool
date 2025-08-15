@@ -72,24 +72,24 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)output\drivers\$(ProjectName)\bin\win$(PlatformArchitecture)</OutDir>
+    <OutDir>$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\bin\win64\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <TargetName>driver_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)output\drivers\$(ProjectName)\bin\win$(PlatformArchitecture)</OutDir>
+    <OutDir>$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\bin\win64\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <TargetName>driver_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)output\drivers\$(ProjectName)\bin\win$(PlatformArchitecture)</OutDir>
+    <OutDir>$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\bin\win64\</OutDir>
     <TargetName>driver_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)output\drivers\$(ProjectName)\bin\win$(PlatformArchitecture)</OutDir>
+    <OutDir>$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\bin\win64\</OutDir>
     <TargetName>driver_$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -107,7 +107,7 @@
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(ProjectDir)$(ProjectName)" "$(SolutionDir)output\drivers\$(ProjectName)" /S /Y /I</Command>
+      <Command>robocopy "$(ProjectDir)simpletrackers" "$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\simpletrackers" "driver.vrdrivermanifest"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -129,7 +129,7 @@
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(ProjectDir)$(ProjectName)" "$(SolutionDir)output\drivers\$(ProjectName)" /S /Y /I</Command>
+      <Command>robocopy "$(ProjectDir)simpletrackers" "$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\simpletrackers" "driver.vrdrivermanifest"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,7 +147,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)openvr\lib\win64;</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(ProjectDir)$(ProjectName)" "$(SolutionDir)output\drivers\$(ProjectName)" /S /Y /I</Command>
+      <Command>robocopy "$(ProjectDir)simpletrackers" "$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\simpletrackers" "driver.vrdrivermanifest"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -169,7 +169,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)openvr\lib\win64;</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(ProjectDir)$(ProjectName)" "$(SolutionDir)output\drivers\$(ProjectName)" /S /Y /I</Command>
+      <Command>robocopy "$(ProjectDir)simpletrackers" "$(SolutionDir)..\ui\bin\$(Platform)\$(Configuration)\driver\simpletrackers" "driver.vrdrivermanifest"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

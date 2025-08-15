@@ -4,6 +4,8 @@
 #include "driverlog.h"
 #include "vrmath.h"
 
+
+
 // Let's create some variables for strings used in getting settings.
 // This is the section where all of the settings we want are stored. A section name can be anything,
 // but if you want to store driver specific settings, it's best to namespace the section with the driver identifier
@@ -19,6 +21,8 @@ MyTrackerDeviceDriver::MyTrackerDeviceDriver( unsigned int my_tracker_id )
 	is_active_ = false;
 	has_last_known_good_pose_ = false;
 	pose_locking_enabled_ = false;
+	proxy_mode_enabled_ = false;
+	target_device_index_ = vr::k_unTrackedDeviceIndexInvalid; // k_unTrackedDeviceIndexInvalid means no device
 
 	my_tracker_id_ = my_tracker_id;
 
@@ -30,6 +34,7 @@ MyTrackerDeviceDriver::MyTrackerDeviceDriver( unsigned int my_tracker_id )
 		my_tracker_main_settings_section, my_tracker_settings_key_model_number, model_number, sizeof( model_number ) );
 	my_device_model_number_ = model_number;
 
+	// of our driver.
 	// Emulate a serial number by appending the internal tracker id we are given by our implementation of
 	// IServerTrackedDeviceProvider
 	my_device_serial_number_ = my_device_model_number_ + std::to_string( my_tracker_id );
@@ -149,8 +154,6 @@ void MyTrackerDeviceDriver::DebugRequest(
 //-----------------------------------------------------------------------------
 vr::DriverPose_t MyTrackerDeviceDriver::GetPose()
 {
-	// Let's retrieve the Hmd pose to base our controller pose off.
-
 	// First, initialize the struct that we'll be submitting to the runtime to tell it we've updated our pose.
 	vr::DriverPose_t pose = { 0 };
 
@@ -158,49 +161,69 @@ vr::DriverPose_t MyTrackerDeviceDriver::GetPose()
 	pose.qWorldFromDriverRotation.w = 1.f;
 	pose.qDriverFromHeadRotation.w = 1.f;
 
-	vr::TrackedDevicePose_t hmd_pose{};
+	pose.deviceIsConnected = true; // Assume the device is always connected
 
-	// GetRawTrackedDevicePoses expects an array.
-	// We only want the hmd pose, which is at index 0 of the array so we can just pass the struct in directly, instead
-	// of in an array
-	vr::VRServerDriverHost()->GetRawTrackedDevicePoses( 0.f, &hmd_pose, 1 );
+	if (proxy_mode_enabled_ && target_device_index_ != vr::k_unTrackedDeviceIndexInvalid)
+	{
+		// --- PROXY MODE --- 
+		// Get the poses of all tracked devices
+		vr::TrackedDevicePose_t all_poses[vr::k_unMaxTrackedDeviceCount];
+		vr::VRServerDriverHost()->GetRawTrackedDevicePoses(0, all_poses, vr::k_unMaxTrackedDeviceCount);
 
-	// Get the position of the hmd from the 3x4 matrix GetRawTrackedDevicePoses returns
-	const vr::HmdVector3_t hmd_position = HmdVector3_From34Matrix( hmd_pose.mDeviceToAbsoluteTracking );
-	// Get the orientation of the hmd from the 3x4 matrix GetRawTrackedDevicePoses returns
-	const vr::HmdQuaternion_t hmd_orientation = HmdQuaternion_FromMatrix( hmd_pose.mDeviceToAbsoluteTracking );
+		// Get the pose of our target device
+		const vr::TrackedDevicePose_t& target_pose = all_poses[target_device_index_];
 
-	// Set the pose orientation to the hmd orientation with the offset applied.
-	pose.qRotation = hmd_orientation;
+		// Copy the target's state
+		pose.poseIsValid = target_pose.bPoseIsValid;
+		pose.result = target_pose.eTrackingResult;
 
-	const vr::HmdVector3_t offset_position = {
-		-0.15f + my_tracker_id_ * 0.15, // translate our tracker depending on the id we were provided
-		0.1f,							// shift it up a little to make it more in view
-		-0.5f,							// put each controller 0.5m forward in front of the hmd so we can see it.
-	};
+		// Copy the target's position and orientation
+		pose.vecPosition[0] = target_pose.mDeviceToAbsoluteTracking.m[0][3];
+		pose.vecPosition[1] = target_pose.mDeviceToAbsoluteTracking.m[1][3];
+		pose.vecPosition[2] = target_pose.mDeviceToAbsoluteTracking.m[2][3];
 
-	// Rotate our offset by the hmd quaternion (so the controllers are always facing towards us), and add then add the
-	// position of the hmd to put it into position.
-	const vr::HmdVector3_t position = hmd_position + ( offset_position * hmd_orientation );
+		pose.qRotation = HmdQuaternion_FromMatrix(target_pose.mDeviceToAbsoluteTracking);
+	}
+	else
+	{
+		// --- DEFAULT (HMD-TRACKING) MODE ---
+		// Get the HMD pose
+		vr::TrackedDevicePose_t hmd_pose;
+		vr::VRServerDriverHost()->GetRawTrackedDevicePoses(0.f, &hmd_pose, 1);
 
-	// copy our position to our pose
-	pose.vecPosition[ 0 ] = position.v[ 0 ];
-	pose.vecPosition[ 1 ] = position.v[ 1 ];
-	pose.vecPosition[ 2 ] = position.v[ 2 ];
+		if (hmd_pose.bPoseIsValid)
+		{
+			// Get the position and orientation of the HMD
+			const vr::HmdVector3_t hmd_position = HmdVector3_From34Matrix(hmd_pose.mDeviceToAbsoluteTracking);
+			const vr::HmdQuaternion_t hmd_orientation = HmdQuaternion_FromMatrix(hmd_pose.mDeviceToAbsoluteTracking);
 
-	// The pose we provided is valid.
-	// This should be set is
-	pose.poseIsValid = true;
+			// Set the pose orientation to the HMD orientation
+			pose.qRotation = hmd_orientation;
 
-	// Our device is always connected.
-	// In reality with physical devices, when they get disconnected,
-	// set this to false and icons in SteamVR will be updated to show the device is disconnected
-	pose.deviceIsConnected = true;
+			const vr::HmdVector3_t offset_position = {
+				-0.15f + my_tracker_id_ * 0.15f, // translate our tracker depending on the id we were provided
+				0.1f,                            // shift it up a little to make it more in view
+				-0.5f,                           // put each controller 0.5m forward in front of the hmd so we can see it.
+			};
 
-	// The state of our tracking. For our virtual device, it's always going to be ok,
-	// but this can get set differently to inform the runtime about the state of the device's tracking
-	// and update the icons to inform the user accordingly.
-	pose.result = vr::TrackingResult_Running_OK;
+			// Rotate our offset by the HMD quaternion and add the HMD's position
+			const vr::HmdVector3_t final_position = hmd_position + (offset_position * hmd_orientation);
+
+			// Copy our position to our pose
+			pose.vecPosition[0] = final_position.v[0];
+			pose.vecPosition[1] = final_position.v[1];
+			pose.vecPosition[2] = final_position.v[2];
+
+			pose.poseIsValid = true;
+			pose.result = vr::TrackingResult_Running_OK;
+		}
+		else
+		{
+			// HMD pose is not valid, so we can't do anything.
+			pose.poseIsValid = false;
+			pose.result = vr::TrackingResult_Uninitialized;
+		}
+	}
 
 	return pose;
 }
@@ -209,6 +232,34 @@ void MyTrackerDeviceDriver::MyPoseUpdateThread()
 {
 	while ( is_active_ )
 	{
+		// --- Read proxy settings --- 
+		const char* settings_section = "PoseLockProxy";
+		// Construct the key for this specific tracker, e.g., "proxy_target_for_MyTrackerModelNumber10"
+		std::string key = "proxy_target_for_" + my_device_serial_number_;
+
+		// Read the target device index from settings. Default to -1 (invalid) if not found.
+		vr::EVRSettingsError eError = vr::VRSettingsError_None;
+		int32_t target_index = vr::VRSettings()->GetInt32(settings_section, key.c_str(), &eError);
+
+		if (eError != vr::VRSettingsError_None)
+		{
+			target_index = -1;
+		}
+
+		if (target_index != -1)
+		{
+			// A valid target is set, so enable proxy mode
+			proxy_mode_enabled_ = true;
+			target_device_index_ = (uint32_t)target_index;
+		}
+		else
+		{
+			// No target is set for this tracker, so disable proxy mode
+			proxy_mode_enabled_ = false;
+			target_device_index_ = vr::k_unTrackedDeviceIndexInvalid;
+		}
+
+		// --- Original Pose Locking Logic ---
 		if (pose_locking_enabled_)
 		{
 			// --- POSE LOCKING LOGIC (for real hardware) ---
