@@ -1,8 +1,7 @@
 {
 	"alwaysActivate": true,
 	"name" : "simpletrackers",
-	"driver_path" : "D:\anti C++\PoseLockProject\ui\bin\x64\Release\driver\bin\win64\driver_simpletrackers.dll",
-	"directory" : "",
+	"directory" : "D:/anti C++/PoseLockProject/ui/bin/x64/Release/driver/",
 	"resourceOnly" : false,
 
 	"hmd_presence" : []

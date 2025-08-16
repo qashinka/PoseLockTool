@@ -29,10 +29,7 @@ MyTrackerDeviceDriver::MyTrackerDeviceDriver( unsigned int my_tracker_id )
 	// We have our model number and serial number stored in SteamVR settings. We need to get them and do so here.
 	// Other IVRSettings methods (to get int32, floats, bools) return the data, instead of modifying, but strings are
 	// different.
-	char model_number[ 1024 ];
-	vr::VRSettings()->GetString(
-		my_tracker_main_settings_section, my_tracker_settings_key_model_number, model_number, sizeof( model_number ) );
-	my_device_model_number_ = model_number;
+	my_device_model_number_ = "MyTrackerModelNumber";
 
 	// of our driver.
 	// Emulate a serial number by appending the internal tracker id we are given by our implementation of

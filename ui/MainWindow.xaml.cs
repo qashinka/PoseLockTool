@@ -103,9 +103,9 @@ namespace WpfAppOpenVr
 
         private void SaveNumTrackersButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!int.TryParse(NumTrackersTextBox.Text, out int numTrackers) || numTrackers < 0 || numTrackers > 10)
+            if (!int.TryParse(NumTrackersTextBox.Text, out int numTrackers) || numTrackers < 0 || numTrackers > 32)
             {
-                StatusTextBlock.Text = "エラー: 0から10の間の整数を入力してください。";
+                StatusTextBlock.Text = "エラー: 0から32の間の整数を入力してください。";
                 return;
             }
 
@@ -250,6 +250,27 @@ namespace WpfAppOpenVr
             StatusTextBlock.Text = "設定を保存しました。変更の完全な適用にはSteamVRの再起動が必要な場合があります。";
         }
 
+        private void AutoLinkButton_Click(object sender, RoutedEventArgs e)
+        {
+            var physicalTrackers = Trackers.Where(t => !t.IsVirtual).ToList();
+            var virtualTrackers = Trackers.Where(t => t.IsVirtual).ToList();
+
+            if (!physicalTrackers.Any() || !virtualTrackers.Any())
+            {
+                StatusTextBlock.Text = "自動リンク対象の物理または仮想トラッカーが見つかりません。";
+                return;
+            }
+
+            int pairings = Math.Min(physicalTrackers.Count, virtualTrackers.Count);
+
+            for (int i = 0; i < pairings; i++)
+            {
+                virtualTrackers[i].SelectedProxyTarget = physicalTrackers[i];
+            }
+
+            StatusTextBlock.Text = $"{pairings}個のトラッカーを自動的にリンクしました。";
+        }
+
         private async void RegisterDriverButton_Click(object sender, RoutedEventArgs e)
         {
             // --- Step 1: Register the driver ---
@@ -334,11 +355,26 @@ namespace WpfAppOpenVr
                 await Task.Delay(1000); // Give it a second to release resources
 
                 StatusTextBlock.Text = "SteamVRプロセスを終了しています...";
-                foreach (var process in Process.GetProcessesByName("vrserver"))
+                var taskkillPsi = new ProcessStartInfo("taskkill", "/F /IM vrmonitor.exe")
                 {
-                    process.Kill();
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                try
+                {
+                    var process = Process.Start(taskkillPsi);
+                    await Task.Run(() => process.WaitForExit());
                 }
-                await Task.Delay(3000); // Wait for the process to die
+                catch (Exception ex)
+                {
+                    StatusTextBlock.Text = $"taskkillの実行に失敗: {ex.Message}";
+                    // Fallback to killing vrserver if taskkill fails for some reason
+                    foreach (var process in Process.GetProcessesByName("vrserver"))
+                    {
+                        process.Kill();
+                    }
+                }
+                await Task.Delay(9000); // Add a 3-second delay to ensure all processes are gone
 
                 StatusTextBlock.Text = "SteamVRを起動しています... (15秒ほどお待ちください)";
                 string vrStartupPath = Path.Combine(steamVrPath, "bin", "win64", "vrstartup.exe");
